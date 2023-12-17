@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ma carte OpenLayers avec fond satellite et sidebar</title>
+  <link rel="stylesheet" href="https://openlayers.org/en/v6.5.0/css/ol.css" type="text/css">
+  <script src="https://openlayers.org/en/v6.5.0/build/ol.js"></script>
+  <style>
+    #map {
+      width: 100%;
+      height: 100vh;
+      float: right;
+      position:absolute;
+      top: 0;
+      left: 0;
+      z-index: -2;
+    }
+    #sidebar {
+      width: 20%;
+      height: 100vh;
+      background-color: #191f7d;
+      padding: 50px;
+      box-sizing: border-box;
+      float: left;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: -1;
+      box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+      color: #FFFFFF;
+    }
+    
+    #content {
+      margin-top: 20px;
+      
+    }
+    
+    #toggle-btns {
+      position: absolute;
+      bottom: 5px;
+      left: 30%;
+      
+    }
+    .toggle-btn {
+      box-shadow: 0px 2px 4px #ffffff;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-right: 8px;
+      z-index: 200;
+    }
+    
+
+.satellite-btn,
+.osm-btn {
+  box-shadow: 0px 2px 4px #010378;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-right: 8px;
+  z-index: 200;
+}
+
+    .satellite-btn:hover,
+#satellite-btn:hover {
+  background-color: #7878ff; /* Nouvelle couleur de fond au survol */
+}
+
+.osm-btn:hover,
+#osm-btn:hover {
+  background-color: #7878ff; /* Nouvelle couleur de fond au survol */
+}
+
+#scale-bar {
+      position: absolute;
+      bottom: 10px;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      background-color: #0e1312;
+      width: 100px;
+      height: 5px;
+      right: 0px;
+      
+      
+    }
+ 
+   .input{
+    margin-top: 2rem;
+   }
+   
+    
+
+
+  </style>
+</head>
+<body>
+    <div id="toggle-btns">
+        <button id="satellite-btn" class="toggle-btn satellite-btn">Satellite</button>
+        <button id="osm-btn" class="toggle-btn osm-btn">OSM</button>
+      </div>
+      
+    
+  <div id="map"></div>
+  <div id="sidebar">
+    
+  <div id="scale-bar"></div>
+  
+  
+
+  
+ 
+  
+  
+    <h2>Google Map</h2>
+    <div id="content">
+      <h3>Recherche</h3>
+      <form>
+        <input type="text" placeholder="Entrez une adresse">
+        <button type="submit">Rechercher</button>
+      </form>
+  
+      <h3>Ajouter un lieu</h3>
+      <form>
+        <input type="text" placeholder="Nom du lieu">
+        <input type="text" placeholder="Adresse">
+        <button type="submit">Ajouter</button>
+      </form>
+
+      <input type="file" class="input">
+          </div>
+  </div>
+ 
+ 
+  
+  <script
+			  src="https://code.jquery.com/jquery-3.7.1.js"
+			  integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4="
+			  crossorigin="anonymous"></script>
+  <script>
+    var center = ol.proj.fromLonLat([-0.3465971, 35.8602138]); // Coordonnées de Arzew, Oran, Algérie
+    var zoomLevel = 10; // Niveau de zoom
+
+    var worldImagery = new ol.layer.Tile({
+      source: new ol.source.XYZ({
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        maxZoom: 19
+      }),
+      visible:false
+
+    });
+    var osmmap= new ol.layer.Tile({
+        source: new ol.source.OSM(),
+        visible:true
+    })
+
+    var map = new ol.Map({
+      target: 'map',
+      layers: [worldImagery,osmmap],
+      view: new ol.View({
+        center: center,
+        zoom: zoomLevel
+      })
+     
+    });
+
+    map.on('click',function(e){
+        console.log(e.coordinate);
+    })
+    var satelliteBtn = document.getElementById('satellite-btn');
+    satelliteBtn.addEventListener('click', function() {
+      worldImagery.setVisible(true);
+      osmmap.setVisible(false);
+    });
+
+    var osmBtn = document.getElementById('osm-btn');
+    osmBtn.addEventListener('click', function() {
+      worldImagery.setVisible(false);
+      osmmap.setVisible(true);
+    });
+
+    const inputBtn = $('.input');
+    console.log(inputBtn)
+    inputBtn.change(function(){
+        let file = $('.input')[0].files[0];
+        let path = URL.createObjectURL(file);
+        console.log(path)
+        fetch(path)
+            .then((res) => {
+                var geojsonLayer = new ol.layer.Vector({
+                    source: new ol.source.Vector({
+                        url: res.url,
+                        format: new ol.format.GeoJSON()
+                    }),
+                    style: [
+                    new ol.style.Style({
+                      stroke: new ol.style.Stroke({
+                        color: 'blue',
+                        width: 3,
+                      }),
+                      fill: new ol.style.Fill({
+                        color: 'rgba(0, 0, 255, 0.1)',
+                      }),
+                    }),
+                    new ol.style.Style({
+                      image: new ol.style.Circle({
+                        radius: 5,
+                        fill: new ol.style.Fill({
+                          color: 'orange',
+                        }),
+                      }),
+                    }),
+                  ],
+                    name:file.name,
+                    title:file.name
+                });
+                map.addLayer(geojsonLayer);
+            })
+    })
+
+
+   
+
+  </script>
+</body>
+</html>
